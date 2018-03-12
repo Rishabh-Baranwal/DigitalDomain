@@ -20,32 +20,28 @@ def create(name, dcc_type, path, template_path):
         print 'Path {} does not exist, creating it....'.format(path)
         os.mkdir(path)
     try:
-        with open(template_path) as stream:
-            config = yaml.safe_load(stream)
-        if config:
-            if dcc_type:
-                dcc_type_list = [dcc for dcc in dcc_type.split(',') if dcc]
-                for dcc_types in dcc_type_list:
-                    create_config = [project_types for project_types in config if
-                                     dcc_types in project_types['value']]
-                    if create_config:
-                        path = os.path.join(path, name)
-                        if not os.path.exists(path):
-                            os.mkdir(path)
-                        path = os.path.join(path, dcc_types)
-                        parent_mode = create_config[0]['permission']
-                        if not os.path.exists(path):
-                            os.mkdir(path, int(parent_mode, 8))
-                        # subprocess.call(['chmod', parent_mode, path])
-                        _create(create_config[0]['value'][dcc_types], path,
-                                parent_mode)
-                    else:
-                        print 'Type {} does not exist in template'.format(
-                            dcc_type)
-                        sys.exit(4)
+        if dcc_type:
+            dcc_type_first = dcc_type.split(',')[0]
+            create_config = _load_config(template_path, dcc_type_first)
+            if create_config:
+                path = os.path.join(path, name)
+                if not os.path.exists(path):
+                    os.mkdir(path)
+                else:
+                    print 'Path {} already exists'.format(path)
+                path = os.path.join(path, dcc_type_first)
+                parent_mode = create_config[0]['permission']
+                if not os.path.exists(path):
+                    os.mkdir(path, int(parent_mode, 8))
+                else:
+                    print 'Path {} already exists'.format(path)
+                _create(create_config[0]['value'][dcc_type_first], path,
+                        parent_mode)
             else:
-                print 'Please provide dcctype'
-                sys.exit(4)
+                print 'Type {} does not exist'.format(dcc_type_first)
+        else:
+            print 'Please provide dcctype'
+            sys.exit(4)
     except IOError as ie:
         print ie
         sys.exit(4)
@@ -54,23 +50,22 @@ def create(name, dcc_type, path, template_path):
         sys.exit(4)
 
 
-def listing_project(path):
+def list_types(template_path):
     """
     Method to list the project types
     :param path: Path of the project folder
     :return: None
     """
-    _no_path_exists(path)
     try:
-        for dirs in os.listdir(path):
-            for type_dirs in os.listdir(os.path.join(path, dirs)):
-                print type_dirs
+        types = _load_config(template_path)
+        for project_types in list(set(types)):
+            print project_types
     except OSError as e:
         print e
         sys.exit(4)
 
 
-def listing_types(dcc_type, path):
+def list_projects(dcc_type, path):
     """
     Method to list the project, optionally on basis of types
     :param dcc_type: Type of the project, can be comma separated
@@ -81,13 +76,14 @@ def listing_types(dcc_type, path):
     try:
         if not dcc_type:
             for dirs in os.listdir(path):
-                print dirs
+                print os.path.join(path, dirs)
         else:
             dcc_types = [dcc for dcc in dcc_type.split(',') if dcc]
             for dirs in os.listdir(path):
-                for type_dirs in os.listdir(os.path.join(path, dirs)):
+                full_path = os.path.join(path, dirs)
+                for type_dirs in os.listdir(full_path):
                     if type_dirs in dcc_types:
-                        print dirs
+                        print '{} is present in {}'.format(type_dirs, full_path)
     except OSError as e:
         print e
         sys.exit(4)
@@ -116,15 +112,21 @@ def delete(name, dcc_type, path, force):
         else:
             dcc_type_list = [dcc for dcc in dcc_type.split(',') if dcc]
             for dcc_types in dcc_type_list:
-                path = os.path.join(path, dcc_types)
-                if not os.path.exists(path):
+                type_path = os.path.join(path, dcc_types)
+                if not os.path.exists(type_path):
                     print 'DCC type {} does not exist'.format(dcc_types)
                     sys.exit(4)
                 else:
-                    if force:
-                        shutil.rmtree(path, ignore_errors=True)
+                    if len(os.listdir(path)) == 1:
+                        if force:
+                            shutil.rmtree(path, ignore_errors=True)
+                        else:
+                            os.rmdir(path)
                     else:
-                        os.rmdir(path)
+                        if force:
+                            shutil.rmtree(type_path, ignore_errors=True)
+                        else:
+                            os.rmdir(type_path)
     except OSError as e:
         print e
         sys.exit(4)
@@ -147,6 +149,9 @@ def describe(name, path):
             level = root.replace(path, '').count(os.sep)
             indent = ' ' * 4 * level
             print('{}{}/'.format(indent, os.path.basename(root)))
+            subindent = ' ' * 4 * (level + 1)
+            for f in files:
+                print('{}{}'.format(subindent, f))
     except OSError as e:
         print e
         sys.exit(4)
@@ -165,13 +170,25 @@ def _create(typdict, path, parent_mode):
             new_path = os.path.join(path, sub['value'])
             new_parent_mode = sub.get('permission', parent_mode)
             if not os.path.exists(new_path):
-                os.mkdir(new_path, int(new_parent_mode, 8))
+                if '.' in sub['value']:
+                    open(new_path, 'w').close()
+                else:
+                    os.mkdir(new_path)
+                os.chmod(new_path, int(new_parent_mode, 8))
+            else:
+                print 'Path {} already exists'.format(new_path)
         elif type(sub['value']) == dict:
             for key in sub['value']:
                 modify_path = os.path.join(path, key)
                 modify_parent_mode = sub.get('permission', parent_mode)
                 if not os.path.exists(modify_path):
-                    os.mkdir(modify_path, int(modify_parent_mode, 8))
+                    if '.' in key:
+                        open(modify_path, 'w').close()
+                    else:
+                        os.mkdir(modify_path)
+                    os.chmod(modify_path, int(modify_parent_mode, 8))
+                else:
+                    print 'Path {} already exists'.format(modify_path)
                 if type(sub['value'][key]) == list:
                     _create(sub['value'][key], modify_path, modify_parent_mode)
 
@@ -185,3 +202,35 @@ def _no_path_exists(path):
     if not os.path.exists(path):
         print 'Path does not exist'
         sys.exit(4)
+
+
+def _load_config(template_path, dcc_type=None):
+    types = []
+    template_folder_paths = [template_paths for template_paths in
+                             template_path.split(':') if template_paths]
+    for paths in template_folder_paths:
+        if os.path.exists(paths):
+            for config_file in os.listdir(paths):
+                config_path = os.path.join(paths, config_file)
+                if os.path.isfile(config_path) and \
+                        config_file.endswith('.yaml'):
+                    with open(config_path) as stream:
+                        config = yaml.safe_load(stream)
+                    if config:
+                        if dcc_type:
+                            create_config = [project_types for
+                                             project_types in config if
+                                             dcc_type in
+                                             project_types['value']]
+                            if create_config:
+                                return create_config
+                        else:
+                            [types.extend(typekeys) for typekeys in [
+                                project_types['value'].keys() for
+                                             project_types in config]]
+                else:
+                    print 'File {} is not a yaml file'.format(config_path)
+        else:
+            print 'Folder path {} does not exist'.format(paths)
+    if types:
+        return types

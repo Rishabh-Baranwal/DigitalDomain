@@ -32,5 +32,3 @@ user wants to delete forcefully.
 
 Describe function describes the project structure using the walk inbuilt
 function.
-
-SET PYTHONPATH to Projman i.e. project root folder

@@ -1,7 +1,7 @@
 import unittest
 import shutil
 import os
-from src.pm import CLI
+from pm import CLI
 
 
 class Namespace:

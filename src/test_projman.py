@@ -1,7 +1,7 @@
 import unittest
 import os
 import shutil
-from src.projman import projman
+import projman
 
 
 class TestProjman(unittest.TestCase):
@@ -12,10 +12,9 @@ class TestProjman(unittest.TestCase):
         self.create_args1 = {'name': 'xyz', 'dcc_type': 'maya',
                              'path': os.path.join(os.path.dirname(__file__),
                                                  'ddtest'),
-                             'template_path': os.path.join(
-                                 os.path.dirname(__file__),
-                                 'templates/config.yaml')}
-        self.list_args = {'path': '/pqr'}
+                             'template_path': os.path.join(os.path.relpath(
+                                 os.getcwd(), 'projman'),'templates')}
+        self.list_args = {'template_path': '/pqr'}
         self.types_args = {'dcc_type': None, 'path': '/ghi'}
         self.delete_args = {'name': None, 'dcc_type': None, 'path': '/jkl',
                             'force': None}
@@ -28,12 +27,12 @@ class TestProjman(unittest.TestCase):
 
     def test_list_negative(self):
         with self.assertRaises(SystemExit) as cm:
-            projman.listing_project(**self.list_args)
+            projman.list_types(**self.list_args)
         self.assertEqual(cm.exception.code, 4)
 
     def test_types_negative(self):
         with self.assertRaises(SystemExit) as cm:
-            projman.listing_types(**self.types_args)
+            projman.list_projects(**self.types_args)
         self.assertEqual(cm.exception.code, 4)
 
     def test_delete_negative(self):
@@ -49,9 +48,9 @@ class TestProjman(unittest.TestCase):
     def test_all_positive(self):
         result = projman.create(**self.create_args1)
         self.assertTrue(result is None)
-        result1 = projman.listing_project(self.create_args1['path'])
+        result1 = projman.list_types(self.create_args1['template_path'])
         self.assertTrue(result1 is None)
-        result2 = projman.listing_types(self.create_args1['dcc_type'],
+        result2 = projman.list_projects(self.create_args1['dcc_type'],
                                           self.create_args1['path'])
         self.assertTrue(result2 is None)
         result3 = projman.describe(self.create_args1['name'],

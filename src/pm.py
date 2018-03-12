@@ -1,8 +1,9 @@
+#!/usr/bin/env python
+
 import argparse
 import os
 import sys
-from src.projman.projman import create, delete, listing_project, \
-    listing_types, describe
+from projman import create, delete, list_projects, list_types, describe
 
 
 class CLI:
@@ -15,21 +16,18 @@ class CLI:
         :param args: arguments passed through command
         """
         self.dcctype = args.type
+        # Getting relative level from the project root 'projman'
+        level = os.getcwd().split('/projman')[1].count(os.sep)
         if args.path:
             self.path = args.path
         elif os.getenv('PROJMAN_LOCATION'):
             self.path = os.getenv('PROJMAN_LOCATION')
         else:
-            self.path = os.path.join(os.getenv('PYTHONPATH'), 'projects')
+            self.path = os.path.join('../' * level, 'projects')
         self.name = args.name
-        self.template_path = os.path.join(os.getenv('PYTHONPATH'),
-                                          'templates/config.yaml')
-        template_path = os.getenv('PROJMAN_TEMPLATES')
-        if template_path:
-            for template_paths in template_path.split(':'):
-                if os.path.exists(template_paths):
-                    self.template_path = template_paths
-                    break
+        self.template_folder_path = os.getenv('PROJMAN_TEMPLATES')
+        if not self.template_folder_path:
+            self.template_folder_path = os.path.join('../' * level, 'templates')
         self.create = args.create
         self.delete = args.delete
         self.list = args.list
@@ -43,13 +41,14 @@ class CLI:
         :return: None
         """
         if self.create:
-            create(self.name, self.dcctype, self.path, self.template_path)
+            create(self.name, self.dcctype, self.path,
+                   self.template_folder_path)
         elif self.delete:
             delete(self.name, self.dcctype, self.path, self.force)
         elif self.list:
-            listing_types(self.dcctype, self.path)
+            list_projects(self.dcctype, self.path)
         elif self.types:
-            listing_project(self.path)
+            list_types(self.template_folder_path)
         elif self.describe:
             describe(self.name, self.path)
         else:
