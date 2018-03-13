@@ -11,20 +11,13 @@ class Namespace:
 
 class TestCLI(unittest.TestCase):
     def setUp(self):
-        self.args = Namespace(name=None, type=None, path=None, create=False,
-                              delete=False, describe=False, list=False,
-                              types=False, forceful=False)
+        self.args = Namespace(name=None, type=None, path=None, SUBCMD=None)
         self.args1 = Namespace(name='abc', type='maya',
                                path=os.path.join(os.path.dirname(__file__),
-                                                 'ddtest'),
-                               create=True,
-                               delete=False, describe=False, list=False,
-                               types=False, forceful=False)
+                                                 'ddtest'), SUBCMD='create')
         self.args2 = Namespace(name='abc', type=None,
                                path=os.path.join(os.path.dirname(__file__),
-                                                 'ddtest'), create=False,
-                               delete=True, describe=False, list=False,
-                               types=False, forceful=True)
+                                                 'ddtest'), SUBCMD='delete')
 
     def test_cli_negative(self):
         self.cli = CLI(self.args)

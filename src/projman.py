@@ -58,8 +58,11 @@ def list_types(template_path):
     """
     try:
         types = _load_config(template_path)
-        for project_types in list(set(types)):
-            print project_types
+        if types:
+            for project_types in list(set(types)):
+                print project_types
+        else:
+            sys.exit(4)
     except OSError as e:
         print e
         sys.exit(4)
@@ -89,13 +92,12 @@ def list_projects(dcc_type, path):
         sys.exit(4)
 
 
-def delete(name, dcc_type, path, force):
+def delete(name, dcc_type, path):
     """
     Method for deletion of project, optionally deletes on basis of type
     :param name: Name of the project
     :param dcc_type: Type of the project
     :param path: Path for the project folder
-    :param force: forceful deletion
     :return: None
     """
     if not name:
@@ -105,10 +107,7 @@ def delete(name, dcc_type, path, force):
     _no_path_exists(path)
     try:
         if not dcc_type:
-            if force:
-                shutil.rmtree(path, ignore_errors=True)
-            else:
-                os.rmdir(path)
+            shutil.rmtree(path, ignore_errors=True)
         else:
             dcc_type_list = [dcc for dcc in dcc_type.split(',') if dcc]
             for dcc_types in dcc_type_list:
@@ -118,15 +117,9 @@ def delete(name, dcc_type, path, force):
                     sys.exit(4)
                 else:
                     if len(os.listdir(path)) == 1:
-                        if force:
-                            shutil.rmtree(path, ignore_errors=True)
-                        else:
-                            os.rmdir(path)
+                        shutil.rmtree(path, ignore_errors=True)
                     else:
-                        if force:
-                            shutil.rmtree(type_path, ignore_errors=True)
-                        else:
-                            os.rmdir(type_path)
+                        shutil.rmtree(type_path, ignore_errors=True)
     except OSError as e:
         print e
         sys.exit(4)
@@ -217,17 +210,24 @@ def _load_config(template_path, dcc_type=None):
                     with open(config_path) as stream:
                         config = yaml.safe_load(stream)
                     if config:
-                        if dcc_type:
-                            create_config = [project_types for
-                                             project_types in config if
-                                             dcc_type in
-                                             project_types['value']]
-                            if create_config:
-                                return create_config
-                        else:
-                            [types.extend(typekeys) for typekeys in [
-                                project_types['value'].keys() for
-                                             project_types in config]]
+                        try:
+                            if dcc_type:
+                                create_config = [project_types for
+                                                 project_types in config if
+                                                 dcc_type in
+                                                 project_types['value']]
+                                if create_config:
+                                    return create_config
+                            else:
+                                [types.extend(typekeys) for typekeys in [
+                                    project_types['value'].keys() for
+                                                 project_types in config]]
+                        except:
+                            print "Invalid yaml file"
+                            sys.exit(4)
+                    else:
+                        print 'Empty yaml file'
+                        sys.exit(4)
                 else:
                     print 'File {} is not a yaml file'.format(config_path)
         else:

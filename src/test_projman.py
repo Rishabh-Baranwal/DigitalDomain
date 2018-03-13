@@ -16,8 +16,7 @@ class TestProjman(unittest.TestCase):
                                  os.getcwd(), 'projman'),'templates')}
         self.list_args = {'template_path': '/pqr'}
         self.types_args = {'dcc_type': None, 'path': '/ghi'}
-        self.delete_args = {'name': None, 'dcc_type': None, 'path': '/jkl',
-                            'force': None}
+        self.delete_args = {'name': None, 'dcc_type': None, 'path': '/jkl'}
         self.describe_args = {'name': None, 'path': '/mno'}
 
     def test_create_negative(self):
@@ -58,7 +57,7 @@ class TestProjman(unittest.TestCase):
         self.assertTrue(result3 is None)
         result4 = projman.delete(self.create_args1['name'],
                                  self.create_args1['dcc_type'],
-                                 self.create_args1['path'], True)
+                                 self.create_args1['path'])
         self.assertTrue(result4 is None)
 
     def tearDown(self):

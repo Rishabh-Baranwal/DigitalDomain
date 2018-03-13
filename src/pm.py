@@ -28,31 +28,27 @@ class CLI:
         self.template_folder_path = os.getenv('PROJMAN_TEMPLATES')
         if not self.template_folder_path:
             self.template_folder_path = os.path.join('../' * level, 'templates')
-        self.create = args.create
-        self.delete = args.delete
-        self.list = args.list
-        self.types = args.types
-        self.describe = args.describe
-        self.force = args.forceful
+        self.subcmd = args.SUBCMD
 
     def run(self):
         """
         Method to call the appropriate method from api module
         :return: None
         """
-        if self.create:
+        if self.subcmd == 'create':
             create(self.name, self.dcctype, self.path,
                    self.template_folder_path)
-        elif self.delete:
-            delete(self.name, self.dcctype, self.path, self.force)
-        elif self.list:
+        elif self.subcmd == 'delete':
+            delete(self.name, self.dcctype, self.path)
+        elif self.subcmd == 'list':
             list_projects(self.dcctype, self.path)
-        elif self.types:
+        elif self.subcmd == 'types':
             list_types(self.template_folder_path)
-        elif self.describe:
+        elif self.subcmd == 'describe':
             describe(self.name, self.path)
         else:
-            print "Insufficient arguments, please provide options to execute"
+            print "Insufficient/Invalid arguments, please provide options " \
+                  "to execute"
             sys.exit(4)
 
 if __name__ == '__main__':
@@ -69,39 +65,30 @@ if __name__ == '__main__':
                                              'it uses a default project path '
                                              'from PROJMAN_LOCATION')
 
-    parser.add_argument('-name', '--name', help='The name of the project to'
-                                                ' create, delete or run types'
-                                                ' on.')
-
     parser.add_argument('-t', '--type', help='The type of the project created '
                                              'from a specific template')
 
-    parser.add_argument('--list', help='List the project which have been '
+    parser.add_argument('SUBCMD', help='list: List the project which have been '
                                        'created, optionally restricting the '
                                        'list to a specific type or types by '
-                                       'passing spcific type or comma '
-                                       'separated type value',
-                        action='store_true')
+                                       'passing specific type or comma '
+                                       'separated type value.\n'
+                                       'create: Create a new project at the '
+                                       'provided path, use PROJMAN_LOCATION env'
+                                       'variable to override else default '
+                                       'projects path will be used.\n'
+                                       'delete: Delete an existing project, '
+                                       'optionally restrict to a particular'
+                                       ' type within project tree.\n'
+                                       'types: List the type of project which '
+                                       'may be created.\n'
+                                       'describe: Print the structure of a '
+                                       'project template.',
+                        choices=['list', 'create', 'delete', 'types',
+                                 'describe'])
 
-    parser.add_argument('--create', help='Create a new project at the '
-                                         'provided path, use PROJMAN_LOCATION'
-                                         ' env variable to override else '
-                                         'default projects path will be used',
-                        action='store_true')
-
-    parser.add_argument('--delete', help='Delete an existing project, '
-                                         'optionally restrict to a particular'
-                                         ' type within project tree',
-                        action='store_true')
-
-    parser.add_argument('-f', '--forceful', help='To be used for force delete ',
-                        action='store_true')
-
-    parser.add_argument('--types', help='List the type of project which may be '
-                                        'created', action='store_true')
-
-    parser.add_argument('--describe', help='Print the structure of a project '
-                                           'template', action='store_true')
+    parser.add_argument('name', help='The name of the project to create, delete'
+                                     ' or run types on.', nargs='?')
 
     args = parser.parse_args()
     cli = CLI(args)
